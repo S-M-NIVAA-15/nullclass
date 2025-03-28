@@ -1,0 +1,73 @@
+voice_translation.py
+import speech_recognition as sr
+from googletrans import Translator
+import gtts
+import pygame
+import os
+import time
+
+def recognize_speech(language):
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print(f"Listening ({language})... Speak now.")
+        recognizer.adjust_for_ambient_noise(source, duration=1)
+        try:
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
+            text = recognizer.recognize_google(audio, language=language)
+            print(f"Recognized: {text}")
+            return text
+        except sr.UnknownValueError:
+            print("Could not understand the audio.")
+        except sr.RequestError:
+            print("API request failed. Check your internet connection.")
+        except sr.WaitTimeoutError:
+            print("No speech detected. Try again.")
+    return ""
+
+def translate_text(text, target_language):
+    translator = Translator()
+    translation = translator.translate(text, dest=target_language)
+    print(f"Translated: {translation.text}")
+    return translation.text
+
+def text_to_speech(text, language):
+    tts = gtts.gTTS(text=text, lang=language)
+    filename = "output.mp3"
+    tts.save(filename)
+    
+    pygame.mixer.init()
+    pygame.mixer.music.load(filename)
+    pygame.mixer.music.play()
+    
+    while pygame.mixer.music.get_busy():
+        time.sleep(1)
+
+    pygame.mixer.quit()
+    os.remove(filename)
+
+def real_time_translation():
+    while True:
+        print("\nSelect mode: 1) English to Spanish  2) Spanish to English  3) Exit")
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            spoken_text = recognize_speech("en")
+            if spoken_text:
+                translated_text = translate_text(spoken_text, "es")
+                text_to_speech(translated_text, "es")
+
+        elif choice == "2":
+            spoken_text = recognize_speech("es")
+            if spoken_text:
+                translated_text = translate_text(spoken_text, "en")
+                text_to_speech(translated_text, "en")
+
+        elif choice == "3":
+            print("Exiting...")
+            break
+        
+        else:
+            print("Invalid choice. Please enter 1, 2, or 3.")
+
+if __name__ == "__main__":
+    real_time_translation()
